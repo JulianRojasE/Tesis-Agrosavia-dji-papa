@@ -13,7 +13,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 if not os.path.exists(Base_imagenes_Path):
     os.makedirs(Base_imagenes_Path)
     print("No existia la carpeta pero se creo en: ", Base_imagenes_Path)
-aaaaaaaa
+aaaaaaaaaaaaaaa
 puntos = pd.read_csv('Puntos QGIS_FIN.csv')
 puntos['new'] = 0
 puntos['new2'] = 0

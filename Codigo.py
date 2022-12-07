@@ -7,7 +7,7 @@ import rasterio
 import pandas as pd
 import matplotlib.pyplot as plt
 from cv2.ximgproc import guidedFilter
-
+BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb
 Base_imagenes_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Salidita"
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
 if not os.path.exists(Base_imagenes_Path):

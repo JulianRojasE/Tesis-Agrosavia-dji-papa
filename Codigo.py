@@ -146,7 +146,7 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
         if area<=1:
             continue
         roiCont.append(con)
-        plantas = math.ceil(area/235)#302
+        plantas = math.ceil(area/225)
         areas.append(area)
         vegetal += area
         total += plantas
@@ -158,7 +158,7 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
         total = 20
         
     if total<14 and mostrar == "y":
-        print("X> El",Lista[i,1],"el total de plantas es: ", total)
+        print("X> El surco:",Lista[i,1],"el total de plantas es:", total)
         
     NumeroFinal.append(total)
     areas_veg.append((vegetal/(Ancho*Alto))*100)
@@ -177,7 +177,7 @@ def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n
         cv2.imshow('Morfologicas',maskRef)
         cv2.imshow('Conteo',Surco_seg)
         
-        print("-> El",Lista[i,1],"el total de plantas es: ", total)
+        print("-> El surco:",Lista[i,1],"el total de plantas es:", total)
         
         cv2.waitKey(0)
     else:
@@ -198,7 +198,7 @@ def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,tota
         cv2.imshow('Filtro Guiado',Guidedmask)
         cv2.imshow('Conteo',Surco_seg)
         
-        print("-> El",Lista[i,1],"el total de plantas es: ", total)
+        print("-> El surco:",Lista[i,1],"el total de plantas es:", total)
         
         cv2.waitKey(0)
     else:
@@ -241,20 +241,17 @@ x_span = X.max()-X.min()
 C = [cm(((x-X.min())/x_span)) for x in X]
 
 plt.bar(X[:-1],Y,color=C)
-plt.title("Cantidad de surcos por numero de plantas")
-plt.xlabel('Numero de plantas')
+plt.title("Cantidad de surcos por número de plantas")
+plt.xlabel('Número de plantas')
 plt.ylabel('Cantidad de surcos')
 plt.grid()
 plt.show()  
 
 X = range(1,len(areas_veg)+1)
 
-x_span = max(X)-min(X)
-C = [cm(((x-min(X))/x_span)) for x in X]
-
 plt.bar(X,areas_veg,width = 1,color="green")
-plt.title("Porcentaje vegetacion por surco")
+plt.title("Porcentaje vegetación por surco")
 plt.xlabel('Id del surco')
-plt.ylabel('Porcentaje vegetacion')
+plt.ylabel('Porcentaje vegetación')
 plt.grid()
 plt.show()

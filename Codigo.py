@@ -67,6 +67,14 @@ def DistanciasROI(Lista):
         Distanciay.append(dist)
 
 def ExtraccionSurco(i):
+    """Retorna la imagen de uno de los n surcos del cultivo, para se obtienen 
+       4 coordenadas que formen un rectangulo entorno al surco y asi reslizar
+       la extracción de la imagen del surco  n
+
+       Esta función recibe un parametro:
+       i -- 
+    
+    """
     pt1 = np.float32([[Lista[i,5]-Esp,Lista[i,4]-Pad],[Lista[i,5]+Esp,Lista[i,4]-Pad],[Lista[i+1,5]-Esp,Lista[i+1,4]+Pad],[Lista[i+1,5]+Esp,Lista[i+1,4]+Pad]])
     pt2 = np.float32([[0,0],[Ancho,0],[0,Alto],[Ancho,Alto]])
     matriz = cv2.getPerspectiveTransform(pt1,pt2)
@@ -177,6 +185,19 @@ def RefinamientoMask(Mascara,output):
     return maskRef,Guidedmask
 
 def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
+    """Esta función retorna el conteo realizado sobre un surco n del cultivo, despues
+       de encontrar los contornos de la imagen con sus areas, organizar las areas de 
+       mayor a menor para descartar areas pequeñas y por ultimo calcular cuantas plantas 
+       hay por area para contar
+
+       Esta funcion recibe 4 parametros:
+       i -- 
+       Surco_seg --
+       maskRed -- 
+       mostrar -- Es la variable utilizada para imprimir o no el resultado del conteo 
+                  en consola
+    
+    """
     contorno, hie = cv2.findContours(maskRef,cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_NONE)
     Sor_cont = sorted(contorno, key=cv2.contourArea, reverse=True)
     

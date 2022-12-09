@@ -30,28 +30,27 @@ Distanciax = []
 Distanciay = []
 
 def GeoreferenciaTran(Path_Qgis,Path_Orto):
-	Puntos = pd.read_csv(Path_Qgis)
-	Puntos['LatPixel'] = 0
-	Puntos['LonPixel'] = 0
-
-	imgT = rasterio.open(Path_Orto)
-	for i in range(Puntos.shape[0]):
-  		Cord_Pixel = imgT.index(Puntos['Lat'].iloc[i],Puntos['Lon'].iloc[i], z=None, precision=None)
-  		Puntos['LatPixel'].iloc[i]= Cord_Pixel[0]
-  		Puntos['LonPixel'].iloc[i]= Cord_Pixel[1]
+    Puntos = pd.read_csv(Path_Qgis)
+    Puntos['LatPixel'] = 0
+    Puntos['LonPixel'] = 0
     
-	return Puntos.to_numpy()
-
+    imgT = rasterio.open(Path_Orto)
+    for i in range(Puntos.shape[0]):
+        Cord_Pixel = imgT.index(Puntos['Lat'].iloc[i],Puntos['Lon'].iloc[i], z=None, precision=None)
+        Puntos['LatPixel'].iloc[i]= Cord_Pixel[0]
+        Puntos['LonPixel'].iloc[i]= Cord_Pixel[1]
+        
+    return Puntos.to_numpy()
 
 def DistanciasROI(Lista):
-	for i in range(0,Lista.shape[0]-2,2):
-  		dist = np.sqrt((Lista[i,4]-Lista[i+2,4])**2+(Lista[i,5]-Lista[i+2,5])**2)/2
-  		dist = int(dist)
-  		Distanciax.append(dist)
-  
-  		dist = np.sqrt((Lista[i,4]-Lista[i+1,4])**2+(Lista[i,5]-Lista[i+1,5])**2)
-  		dist = int(dist)
-  		Distanciay.append(dist)
+    for i in range(0,Lista.shape[0]-2,2):
+        dist = np.sqrt((Lista[i,4]-Lista[i+2,4])**2+(Lista[i,5]-Lista[i+2,5])**2)/2
+        dist = int(dist)
+        Distanciax.append(dist)
+        
+        dist = np.sqrt((Lista[i,4]-Lista[i+1,4])**2+(Lista[i,5]-Lista[i+1,5])**2)
+        dist = int(dist)
+        Distanciay.append(dist)
 
 def ExtraccionSurco(i):
     pt1 = np.float32([[Lista[i,5]-Esp,Lista[i,4]-Pad],[Lista[i,5]+Esp,Lista[i,4]-Pad],[Lista[i+1,5]-Esp,Lista[i+1,4]+Pad],[Lista[i+1,5]+Esp,Lista[i+1,4]+Pad]])
@@ -158,7 +157,7 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
         total = 20
         
     if total<14 and mostrar == "y":
-        print("X> El surco:",Lista[i,1],"el total de plantas es:", total)
+        print("X> El surco",Lista[i,1],"tiene un total de:",total,"plantas")
         
     NumeroFinal.append(total)
     areas_veg.append((vegetal/(Ancho*Alto))*100)
@@ -177,7 +176,7 @@ def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n
         cv2.imshow('Morfologicas',maskRef)
         cv2.imshow('Conteo',Surco_seg)
         
-        print("-> El surco:",Lista[i,1],"el total de plantas es:", total)
+        print("-> El surco",Lista[i,1],"tiene un total de:",total,"plantas")
         
         cv2.waitKey(0)
     else:
@@ -185,8 +184,7 @@ def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n
         
         
 def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,total,mostrar = "n"):
-    if mostrar == "y":
-        
+    if mostrar == "y":   
         OrtoMos = np.copy(Orto)
         OrtoMos[Lista[i,4]:Lista[i,4]+8,:]=255 # x
         OrtoMos[:,Lista[i,5]:Lista[i,5]+8]=255 # y
@@ -198,11 +196,19 @@ def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,tota
         cv2.imshow('Filtro Guiado',Guidedmask)
         cv2.imshow('Conteo',Surco_seg)
         
-        print("-> El surco:",Lista[i,1],"el total de plantas es:", total)
+        print("-> El surco",Lista[i,1],"tiene un total de:",total,"plantas")
         
         cv2.waitKey(0)
     else:
         return
+
+def GuardarSalida(Surco,total,Mascara,Guidedmask,Genotipo,Guardar = "n"):
+    if Guardar == "y":
+        cv2.imwrite(Base_Salida_Path +"/O_"+str(Genotipo)+"_"+str(total)+".PNG",Surco)
+        cv2.imwrite(Base_Salida_Path +"1/M_"+str(Genotipo)+"_"+str(total)+".PNG",Mascara)
+        cv2.imwrite(Base_Salida_Path +"2/G_"+str(Genotipo)+"_"+str(total)+".PNG",Guidedmask)
+    else:
+        return    
 
 # Main 
 
@@ -226,11 +232,14 @@ for i in range(0,Lista.shape[0]-2,2):
     MostrarOperaciones(i,Surco,Surco_seg,Mascara,maskRef,Guidedmask,NumeroPlantas,mostrar = "n")
     Genotipo = Lista[i,1].split("_")
     tipo.append(Genotipo[0])
+    GuardarSalida(Surco,NumeroPlantas,Mascara,Guidedmask,Genotipo[0],Guardar = "y")
     if cv2.waitKey(0) & 0xFF == ord('a'):
         break
     
 Inventario = np.column_stack((tipo,NumeroFinal,areas_veg))
     
+np.savetxt("Inventario.txt", Inventario,fmt="%s", delimiter =",",header="Genotipo, Conteo, % Veg")
+
 cv2.destroyAllWindows()
 
 cm = plt.cm.get_cmap('RdYlBu_r')

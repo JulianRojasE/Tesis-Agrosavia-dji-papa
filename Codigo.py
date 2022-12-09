@@ -230,6 +230,9 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
     return total
     
 def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n"):
+    """
+    Esta funcion no tiene retorno, ya que esta pensada para 
+    """
     if Lista[i,1] == GenotipoN and GenotipoN != "n":
         OrtoMos = np.copy(Orto)
         OrtoMos[Lista[i,4]:Lista[i,4]+8,:]=255 # x
@@ -268,6 +271,19 @@ def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,tota
         return
 
 def GuardarSalida(Surco,total,Mascara,Guidedmask,Genotipo,Guardar = "n"):
+    """
+    Esta función no tiene retorno, ya que esta pensada para hacer el guardado de 
+    la imagen extraida del ortomosaico del surco n, la mascara resultado de la segmentación
+    y por ultimo la mascara resultadod del filtro guiado.
+
+    Esta funcion recibe 6 parametros:
+    Surco -- imagen de uno de los n surcos del cultivo
+            producto de aplicar la funcion ExtraccionSurco()
+    total -- numero que indica el total de plantas contadas en el surco n
+    Mascara -- mascara binaria obtenida del metodo de segmentación
+    Guidedmask --
+    Guardar -- Es la variable utilizada para guardad o no en el path indicado
+    """
     if Guardar == "y":
         cv2.imwrite(Base_Salida_Path +"/O_"+str(Genotipo)+"_"+str(total)+".PNG",Surco)
         cv2.imwrite(Base_Salida_Path +"1/M_"+str(Genotipo)+"_"+str(total)+".PNG",Mascara)

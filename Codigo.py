@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from cv2.ximgproc import guidedFilter
 
+
 #Path_Orto = r'V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif'
 Path_Orto = r'V1_19_J_22_12m_JPG_UHD_P4_R-orthophoto.tif'
 Path_Qgis = r'Puntos QGIS_FIN.csv'
@@ -15,6 +16,10 @@ Base_Salida_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Base_de_Salida"
 if not os.path.exists(Base_Salida_Path):
     os.makedirs(Base_Salida_Path)
     print("No existia la carpeta pero se creo en: ", Base_Salida_Path)
+
+"""
+Validar que los Paths hacia: el orto mosaico, Qgis, y base de salida esten bien definidos, se recomienda dejar estos archivos en la misma carpeta del proyecto
+"""
     
 Orto = cv2.imread(Path_Orto)
 
@@ -31,15 +36,14 @@ Distanciay = []
 
 def GeoreferenciaTran(Path_Qgis,Path_Orto):
     """Retorna un arreglo numpy con los indices para la latitud 
-    y longitud de los puntos de inicio y final en el ortomosaico
+    y longitud en pixeles de los puntos de inicio y final en el ortomosaico
     indicado en el parametro Path_Orto
 
-    esta funcion recibe dos parametros;
+    Esta funcion recibe dos parametros;
     Path_Qgis -- la ruta donde se encuentran las coordenadas
     extraidas de Qgis de los puntos de inicio y fin de cada surco
 
     Path_Orto -- Ruta del ortomosaico de interes
-
     """
     Puntos = pd.read_csv(Path_Qgis)
     Puntos['LatPixel'] = 0
@@ -54,7 +58,12 @@ def GeoreferenciaTran(Path_Qgis,Path_Orto):
     return Puntos.to_numpy()
 
 def DistanciasROI(Lista):
-    """
+    """Modifica dos listas (Distanciax, Distanciay) con las distancias entre surcos continuos y
+    la distancia del tamaño del surco , esto es util para calcular el ancho y alto de las ventanas de los surcos
+    para que no se presente distorción.
+
+    Esta funcion recibe 1 parametros;
+    Lista -- la ruta donde se encuentran las coordenadas en pixeles de cada genotipo
     
     """
     for i in range(0,Lista.shape[0]-2,2):
@@ -69,11 +78,10 @@ def DistanciasROI(Lista):
 def ExtraccionSurco(i):
     """Retorna la imagen de uno de los n surcos del cultivo, para se obtienen 
        4 coordenadas que formen un rectangulo entorno al surco y asi reslizar
-       la extracción de la imagen del surco  n
+       la extracción de la imagen del surco  N
 
        Esta función recibe un parametro:
        i -- 
-    
     """
     pt1 = np.float32([[Lista[i,5]-Esp,Lista[i,4]-Pad],[Lista[i,5]+Esp,Lista[i,4]-Pad],[Lista[i+1,5]-Esp,Lista[i+1,4]+Pad],[Lista[i+1,5]+Esp,Lista[i+1,4]+Pad]])
     pt2 = np.float32([[0,0],[Ancho,0],[0,Alto],[Ancho,Alto]])
@@ -124,7 +132,6 @@ def SegKmedias(Surco):
        Esta funcion recibe un parametro:
        Surco -- imagen de uno de los n surcos del cultivo
             producto de aplicar la funcion ExtraccionSurco()
-
     """
     img1 = np.copy(Surco)
     
@@ -195,8 +202,8 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
        Surco_seg --
        maskRed -- 
        mostrar -- Es la variable utilizada para imprimir o no el resultado del conteo 
-                  en consola
-    
+                  en consola si mostrar = "y"  este se mostrara el cual representa surcos
+                  con conteos menores a 14 plantas
     """
     contorno, hie = cv2.findContours(maskRef,cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_NONE)
     Sor_cont = sorted(contorno, key=cv2.contourArea, reverse=True)
@@ -231,7 +238,9 @@ def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
     
 def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n"):
     """
-    Esta funcion no tiene retorno, ya que esta pensada para 
+    Esta funcion no tiene retorno, ya que esta pensada para mostrar a manera grafica el proceso completo que se hace
+    en un solo surco de elección, si se desea evaluar un surco se envia el parametro GenotipoN el genotipo de
+    la planta a evaluar. ej = GenotipoN = "G22_start".
     """
     if Lista[i,1] == GenotipoN and GenotipoN != "n":
         OrtoMos = np.copy(Orto)
@@ -252,6 +261,11 @@ def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n
         
         
 def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,total,mostrar = "n"):
+    """Esta funcion no tiene retorno, ya que esta pensada para mostrar a manera grafica el proceso completo que se hace
+    en todos los solo surcos.
+
+    Si se desea ver el proceso se envia el parametro mostrar en y
+    """
     if mostrar == "y":   
         OrtoMos = np.copy(Orto)
         OrtoMos[Lista[i,4]:Lista[i,4]+8,:]=255 # x
@@ -291,7 +305,7 @@ def GuardarSalida(Surco,total,Mascara,Guidedmask,Genotipo,Guardar = "n"):
     else:
         return    
 
-# Main 
+# Este proceso describe el main o programa base del proyecto
 
 Lista = GeoreferenciaTran(Path_Qgis,Path_Orto)
 
@@ -302,6 +316,13 @@ Pad = 25
 Alto = 294 + 2*Pad
 Ancho = Esp*2+1
 
+"""
+Esp: indica la distancia que hay de surco a surco y es el promedio del vector de distanciasx
+Alo: indica la distancia del tamaño del surco y es el promedio del vector de distanciasy
+
+*Estos valores no se necesitan cambiar si se siguen haciendo vuelos a 35 metros de lo contrario
+se tiene que re evaluar distanciasx y distanciasy
+"""
        
 for i in range(0,Lista.shape[0]-2,2):
     Surco = ExtraccionSurco(i)
@@ -321,6 +342,9 @@ Inventario = np.column_stack((tipo,NumeroFinal,areas_veg))
     
 np.savetxt(Base_Salida_Path+"/Inventario.txt", Inventario,fmt="%s", delimiter =",",header="Genotipo, Conteo, % Veg")
 
+"""
+Se guarda finalmente el inventario en la carpeta de salida y se imprimen histogramas de interes.
+"""
 cv2.destroyAllWindows()
 
 cm = plt.cm.get_cmap('RdYlBu_r')

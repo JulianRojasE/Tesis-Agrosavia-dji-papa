@@ -30,6 +30,17 @@ Distanciax = []
 Distanciay = []
 
 def GeoreferenciaTran(Path_Qgis,Path_Orto):
+    """Retorna un arreglo numpy con los indices para la latitud 
+    y longitud de los puntos de inicio y final en el ortomosaico
+    indicado en el parametro Path_Orto
+    
+    esta funcion recibe dos parametros;
+    Path_Qgis:la ruta donde se encuentran las coordenadas
+    extraidas de Qgis de los puntos de inicio y fin de cada surco
+
+    Path_Orto: Ruta del ortomosaico de interes
+
+    """
 	Puntos = pd.read_csv(Path_Qgis)
 	Puntos['LatPixel'] = 0
 	Puntos['LonPixel'] = 0

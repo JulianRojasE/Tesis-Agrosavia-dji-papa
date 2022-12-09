@@ -30,6 +30,17 @@ Distanciax = []
 Distanciay = []
 
 def GeoreferenciaTran(Path_Qgis,Path_Orto):
+        """Retorna un arreglo numpy con los indices para la latitud 
+    y longitud de los puntos de inicio y final en el ortomosaico
+    indicado en el parametro Path_Orto
+
+    esta funcion recibe dos parametros;
+    Path_Qgis:la ruta donde se encuentran las coordenadas
+    extraidas de Qgis de los puntos de inicio y fin de cada surco
+
+    Path_Orto: Ruta del ortomosaico de interes
+
+    """
     Puntos = pd.read_csv(Path_Qgis)
     Puntos['LatPixel'] = 0
     Puntos['LonPixel'] = 0
@@ -82,6 +93,13 @@ def SegEspacioColor(Surco):
     return mask
 
 def SegKmedias(Surco):
+    """Retorna la mascara binaria resultado de la segmentacion de k-medias para 
+       un surco del cultivo
+
+       Esta funcion recibe como parametro una imagen de uno de los n surcos del cultivo
+       producto de aplicar la funcion ExtraccionSurco()
+
+    """
     img1 = np.copy(Surco)
     
     TargetB = 135.730
@@ -90,9 +108,9 @@ def SegKmedias(Surco):
     img1 = img1.reshape(-1,1)
     img1 = np.float32(img1)
     
-    # Define criteria = ( type, max_iter = 10 , epsilon = 1.0 )
+    # Define criteria 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.85)
-    # Set flags (Just to avoid line break in the code)
+    # Set flags 
     flags = cv2.KMEANS_RANDOM_CENTERS
     
     compactness,labels,centers = cv2.kmeans(img1,2,None,criteria,10,flags)
@@ -126,6 +144,14 @@ def SegKmedias(Surco):
 
 
 def RefinamientoMask(Mascara,output):
+    """Esta funcion retorna el resultado de aplicar a una mascara binaria, resultado
+    del proceso de segmentacion las operaciones morfologicas de apertura y cierre de
+    forma suceciva y tambien la aplicacion de un filtro guiado que tiene como imagen 
+    guia la misma imagen que se sometio al proceso de segmentacion
+
+    maskRef es el resultado de aplicar las operaciones morfologicas con un kernel 2x2
+    Guidedmask es el resultado de aplicar un filtro guiado a maskRef
+    """
     kernel = np.ones((2,2),np.uint8)
     mask1 = cv2.morphologyEx(Mascara, cv2.MORPH_OPEN, kernel)
     maskRef = cv2.morphologyEx(mask1, cv2.MORPH_CLOSE, kernel)

@@ -30,7 +30,7 @@ Distanciax = []
 Distanciay = []
 
 def GeoreferenciaTran(Path_Qgis,Path_Orto):
-        """Retorna un arreglo numpy con los indices para la latitud 
+    """Retorna un arreglo numpy con los indices para la latitud 
     y longitud de los puntos de inicio y final en el ortomosaico
     indicado en el parametro Path_Orto
 

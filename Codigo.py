@@ -1,6 +1,3 @@
-hola
-pirobo el N
-Hola x2
 import cv2
 import numpy as np
 import os
@@ -9,16 +6,17 @@ import rasterio
 import pandas as pd
 import matplotlib.pyplot as plt
 from cv2.ximgproc import guidedFilter
-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb
-Base_imagenes_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Salidita"
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaa
-if not os.path.exists(Base_imagenes_Path):
-    os.makedirs(Base_imagenes_Path)
-    print("No existia la carpeta pero se creo en: ", Base_imagenes_Path)
-aaaaaaaaaaaaaaa
-puntos = pd.read_csv('Puntos QGIS_FIN.csv')
-puntos['new'] = 0
-puntos['new2'] = 0
+
+#Path_Orto = r'V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif'
+Path_Orto = r'V1_19_J_22_12m_JPG_UHD_P4_R-orthophoto.tif'
+Path_Qgis = r'Puntos QGIS_FIN.csv'
+Base_Salida_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Salidita"
+
+if not os.path.exists(Base_Salida_Path):
+    os.makedirs(Base_Salida_Path)
+    print("No existia la carpeta pero se creo en: ", Base_Salida_Path)
+    
+Orto = cv2.imread(Path_Orto)
 
 NumeroFinal=[]
 tipo=[]
@@ -28,39 +26,64 @@ areas = []
 eps = 10e-6
 eps *= 255*255
 
-Esp = 21
-Pad = 25
-Alto = 294 + 2*Pad
-Ancho = Esp*2+1
-
-fp = r'V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif'
-Orto = cv2.imread('V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif', cv2.IMREAD_UNCHANGED)
-
-img = rasterio.open(fp)
-for i in range(puntos.shape[0]):
-    lal = img.index(puntos['Lat'].iloc[i],puntos['Lon'].iloc[i], z=None, precision=None)
-    puntos['new'].iloc[i]= lal[0]
-    puntos['new2'].iloc[i]= lal[1]
-    
-Lista = puntos.to_numpy()
-
 Distanciax = []
 Distanciay = []
+
+def GeoreferenciaTran(Path_Qgis,Path_Orto):
+	Puntos = pd.read_csv(Path_Qgis)
+	Puntos['LatPixel'] = 0
+	Puntos['LonPixel'] = 0
+
+	imgT = rasterio.open(Path_Orto)
+	for i in range(Puntos.shape[0]):
+  		Cord_Pixel = imgT.index(Puntos['Lat'].iloc[i],Puntos['Lon'].iloc[i], z=None, precision=None)
+  		Puntos['LatPixel'].iloc[i]= Cord_Pixel[0]
+  		Puntos['LonPixel'].iloc[i]= Cord_Pixel[1]
     
-for i in range(0,Lista.shape[0]-2,2):
-    
+	return Puntos.to_numpy()
+
+
+def DistanciasROI(Lista):
+	for i in range(0,Lista.shape[0]-2,2):
+  		dist = np.sqrt((Lista[i,4]-Lista[i+2,4])**2+(Lista[i,5]-Lista[i+2,5])**2)/2
+  		dist = int(dist)
+  		Distanciax.append(dist)
+  
+  		dist = np.sqrt((Lista[i,4]-Lista[i+1,4])**2+(Lista[i,5]-Lista[i+1,5])**2)
+  		dist = int(dist)
+  		Distanciay.append(dist)
+
+def ExtraccionSurco(i):
     pt1 = np.float32([[Lista[i,5]-Esp,Lista[i,4]-Pad],[Lista[i,5]+Esp,Lista[i,4]-Pad],[Lista[i+1,5]-Esp,Lista[i+1,4]+Pad],[Lista[i+1,5]+Esp,Lista[i+1,4]+Pad]])
     pt2 = np.float32([[0,0],[Ancho,0],[0,Alto],[Ancho,Alto]])
-    
-    matrix = cv2.getPerspectiveTransform(pt1,pt2)
-    output = cv2.warpPerspective(Orto,matrix,(Ancho,Alto))
-    
-    cv2.imshow('Surco a Analizar', output) 
-    
-    #Orto[Lista[i,4]:Lista[i,4]+6,:]=255 # x
-    #Orto[:,Lista[i,5]:Lista[i,5]+6]=255 # y
-    
-    img1 = output
+    matriz = cv2.getPerspectiveTransform(pt1,pt2)
+    output = cv2.warpPerspective(Orto,matriz,(Ancho,Alto))
+    return output
+
+def SegUmbralizacion(Surco):
+    blur = cv2.GaussianBlur(Surco,(5,5),0)
+    ret,thresh = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    return thresh
+
+def SegEspacioColor(Surco):
+    blur = cv2.GaussianBlur(Surco,(5,5),0)
+    hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
+
+    (h, s, v) = cv2.split(hsv)
+
+    ret,thresh = cv2.threshold(h,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    ret1,thresh1 = cv2.threshold(s,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    ret2,thresh2 = cv2.threshold(v,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    lower_bound = np.array([27 , int(round(ret1*0.45)), int(round(ret2*0.47))])   
+
+    upper_bound = np.array([110 , int(round(ret1*0.45)*8), int(round(ret2*0.47)*4)])
+
+    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    return mask
+
+def SegKmedias(Surco):
+    img1 = np.copy(Surco)
     
     TargetB = 135.730
     TargetF = 41.4730
@@ -77,7 +100,7 @@ for i in range(0,Lista.shape[0]-2,2):
 
     MaskF = np.uint8(labels)
     
-    Maskm1 = MaskF.reshape(output.shape[0],output.shape[1])
+    Maskm1 = MaskF.reshape(Surco.shape[0],Surco.shape[1])
     Maskm2 = np.where(Maskm1 == 0, 1, 0)
     
     m=[Maskm1,Maskm2]
@@ -97,104 +120,115 @@ for i in range(0,Lista.shape[0]-2,2):
         else:
             maskB = maskB[:,:]+m[j]
             
-    #cv2.imshow('Mascara frontal', maskF)
-            
     maskB = np.where(maskB == 1, 255, 0).astype('uint8')
     maskF = np.where(maskF == 1, 255, 0).astype('uint8')
     
-    kernel = np.ones((2,2),np.uint8)
-    mask1 = cv2.morphologyEx(maskF, cv2.MORPH_OPEN, kernel)
-    mask2 = cv2.morphologyEx(mask1, cv2.MORPH_CLOSE, kernel)
-    
-    cv2.imshow('Original',maskF)
-    cv2.imshow('mask1',mask1)
-    cv2.imshow('mask2',mask2)
+    return maskF
 
-    Guidedmask = guidedFilter(output,mask2,6,eps)
-    
-    #cv2.imshow('Guiado',Guidedmask)
-    
-    segmented_img = cv2.bitwise_or(output, output, mask=Guidedmask)
-    
-    cont, hie = cv2.findContours(mask2,cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_NONE)
-    
-    Sor_cont = sorted(cont, key=cv2.contourArea, reverse=True)
+
+def RefinamientoMask(Mascara,output):
+    kernel = np.ones((2,2),np.uint8)
+    mask1 = cv2.morphologyEx(Mascara, cv2.MORPH_OPEN, kernel)
+    maskRef = cv2.morphologyEx(mask1, cv2.MORPH_CLOSE, kernel)
+    Guidedmask = guidedFilter(output,maskRef,6,eps)
+    return maskRef,Guidedmask
+
+def Conteo(i,Surco_seg,maskRef,mostrar = "n"):
+    contorno, hie = cv2.findContours(maskRef,cv2.RETR_EXTERNAL ,cv2.CHAIN_APPROX_NONE)
+    Sor_cont = sorted(contorno, key=cv2.contourArea, reverse=True)
     
     roiCont = []
     total = 0
     vegetal = 0
     
     for con in Sor_cont:
-        
         area = cv2.contourArea(con)
-        
         if area<=1:
             continue
-        
         roiCont.append(con)
-        
-        plantas = math.ceil(area/225)#302
-        
+        plantas = math.ceil(area/235)#302
         areas.append(area)
-        
         vegetal += area
         total += plantas
-        
-        cv2.putText(segmented_img, str(plantas), (con[0,0,0],con[0,0,1]), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,0,0), 1)
+        cv2.putText(Surco_seg, str(plantas), (con[0,0,0],con[0,0,1]), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255,0,0), 1)
+    
+    cv2.drawContours(Surco_seg,roiCont,-1,(255,255,255),1)
     
     if total>20:
         total = 20
-    
+        
+    if total<14 and mostrar == "y":
+        print("X> El",Lista[i,1],"el total de plantas es: ", total)
+        
     NumeroFinal.append(total)
     areas_veg.append((vegetal/(Ancho*Alto))*100)
-    var = Lista[i,1].split("_")
-    tipo.append(var[0])
     
-    print("-> El",Lista[i,1],"el total de plantas es: ", total)
+    return total
     
-    #if total<10:
-        #print("-> El",Lista[i,1],"el total de plantas es: ", total)
+def MostrarSurcoN(i,output,Surco_seg,semegmentacion,maskRef,total,GenotipoN = "n"):
+    if Lista[i,1] == GenotipoN and GenotipoN != "n":
+        OrtoMos = np.copy(Orto)
+        OrtoMos[Lista[i,4]:Lista[i,4]+8,:]=255 # x
+        OrtoMos[:,Lista[i,5]:Lista[i,5]+8]=255 # y
         
-    cv2.drawContours(segmented_img,roiCont,-1,(255,255,255),1)
-    
-    cv2.imshow('Salidita',segmented_img)
-    
-    #cv2.imshow('Orto Lugar', cv2.resize(Orto,None,fx=0.14,fy=0.14))
-    
-    #Orto = cv2.imread('V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif')
-    
-    if cv2.waitKey(0) & 0xFF == ord('a'):
-        break
-    
-    cv2.imwrite(Base_imagenes_Path +"/"+"guided"+".PNG",segmented_img)
-    #cv2.imwrite(Base_imagenes_Path +"/"+"mask1"+".PNG",mask1)
-    #cv2.imwrite(Base_imagenes_Path +"/"+"mask2"+".PNG",mask2)
-    #cv2.imwrite(Base_imagenes_Path +"/"+"vista"+".PNG",segmented_img)
-    #cv2.imwrite(Base_imagenes_Path +"/"+str(var[0])+"_"+str(total)+".PNG",output)
-    #cv2.imwrite(Base_imagenes_Path +"1/M"+str(var[0])+"_"+str(total)+".PNG",mask2)
-    
-    """if Lista[i,1] == "P138_start":
-        
-        cv2.imshow('Surco a Analizar', output) 
-
-        Orto[Lista[i,4]:Lista[i,4]+8,:]=255 # x
-        Orto[:,Lista[i,5]:Lista[i,5]+8]=255 # y
-        
-        cv2.imshow('Salidita',segmented_img)
-        
-        cv2.imshow('Mascara',thresh)
-        
-        cv2.imshow('Morfologicas',mask2)
-        
-        cv2.imshow('Orto Lugar', cv2.resize(Orto,None,fx=0.14,fy=0.14))
-        
-        Orto = cv2.imread('V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif', cv2.IMREAD_UNCHANGED)
+        cv2.imshow('Orto Lugar', cv2.resize(OrtoMos,None,fx=0.14,fy=0.14))
+        cv2.imshow('Surco a Analizar', output)
+        cv2.imshow('Mascara',semegmentacion)
+        cv2.imshow('Morfologicas',maskRef)
+        cv2.imshow('Conteo',Surco_seg)
         
         print("-> El",Lista[i,1],"el total de plantas es: ", total)
         
-        if cv2.waitKey(0) & 0xFF == ord('a'):
-            break"""
+        cv2.waitKey(0)
+    else:
+        return
         
+        
+def MostrarOperaciones(i,output,Surco_seg,semegmentacion,maskRef,Guidedmask,total,mostrar = "n"):
+    if mostrar == "y":
+        
+        OrtoMos = np.copy(Orto)
+        OrtoMos[Lista[i,4]:Lista[i,4]+8,:]=255 # x
+        OrtoMos[:,Lista[i,5]:Lista[i,5]+8]=255 # y
+        
+        cv2.imshow('Orto Lugar', cv2.resize(OrtoMos,None,fx=0.14,fy=0.14))
+        cv2.imshow('Surco a Analizar', output)
+        cv2.imshow('Mascara',semegmentacion)
+        cv2.imshow('Morfologicas',maskRef)
+        cv2.imshow('Filtro Guiado',Guidedmask)
+        cv2.imshow('Conteo',Surco_seg)
+        
+        print("-> El",Lista[i,1],"el total de plantas es: ", total)
+        
+        cv2.waitKey(0)
+    else:
+        return
+
+# Main 
+
+Lista = GeoreferenciaTran(Path_Qgis,Path_Orto)
+
+DistanciasROI(Lista)
+
+Esp = 21
+Pad = 25
+Alto = 294 + 2*Pad
+Ancho = Esp*2+1
+
+       
+for i in range(0,Lista.shape[0]-2,2):
+    Surco = ExtraccionSurco(i)
+    Mascara = SegEspacioColor(Surco)
+    maskRef,Guidedmask = RefinamientoMask(Mascara,Surco)
+    Surco_seg = cv2.bitwise_or(Surco, Surco, mask=maskRef)
+    NumeroPlantas = Conteo(i,Surco_seg,maskRef,mostrar = "n")
+    MostrarSurcoN(i,Surco,Surco_seg,Mascara,maskRef,NumeroPlantas,GenotipoN = "n")
+    MostrarOperaciones(i,Surco,Surco_seg,Mascara,maskRef,Guidedmask,NumeroPlantas,mostrar = "n")
+    Genotipo = Lista[i,1].split("_")
+    tipo.append(Genotipo[0])
+    if cv2.waitKey(0) & 0xFF == ord('a'):
+        break
+    
 Inventario = np.column_stack((tipo,NumeroFinal,areas_veg))
     
 cv2.destroyAllWindows()
@@ -223,4 +257,4 @@ plt.title("Porcentaje vegetacion por surco")
 plt.xlabel('Id del surco')
 plt.ylabel('Porcentaje vegetacion')
 plt.grid()
-plt.show() 
+plt.show()

@@ -54,6 +54,9 @@ def GeoreferenciaTran(Path_Qgis,Path_Orto):
     return Puntos.to_numpy()
 
 def DistanciasROI(Lista):
+    """
+    
+    """
     for i in range(0,Lista.shape[0]-2,2):
         dist = np.sqrt((Lista[i,4]-Lista[i+2,4])**2+(Lista[i,5]-Lista[i+2,5])**2)/2
         dist = int(dist)
@@ -71,11 +74,20 @@ def ExtraccionSurco(i):
     return output
 
 def SegUmbralizacion(Surco):
+    """Retorna la mascaara binaria resultado de segmentación
+    por umbralización
+
+    esta funcion recibe un parametro:
+    Surco: imagen que debe contener un unico surco para ser  segmentada  
+    """
     blur = cv2.GaussianBlur(Surco,(5,5),0)
     ret,thresh = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return thresh
 
 def SegEspacioColor(Surco):
+    """
+    
+    """
     blur = cv2.GaussianBlur(Surco,(5,5),0)
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
 

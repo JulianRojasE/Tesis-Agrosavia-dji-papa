@@ -10,7 +10,7 @@ from cv2.ximgproc import guidedFilter
 #Path_Orto = r'V1_19_J_22_12m_NIIR_UHD_P4_R-orthophoto.tif'
 Path_Orto = r'V1_19_J_22_12m_JPG_UHD_P4_R-orthophoto.tif'
 Path_Qgis = r'Puntos QGIS_FIN.csv'
-Base_Salida_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Salidita"
+Base_Salida_Path = "C:/Users/julia/Desktop/9 semestre/Tesis/GFK/Base_de_Salida"
 
 if not os.path.exists(Base_Salida_Path):
     os.makedirs(Base_Salida_Path)
@@ -238,7 +238,7 @@ for i in range(0,Lista.shape[0]-2,2):
     
 Inventario = np.column_stack((tipo,NumeroFinal,areas_veg))
     
-np.savetxt("Inventario.txt", Inventario,fmt="%s", delimiter =",",header="Genotipo, Conteo, % Veg")
+np.savetxt(Base_Salida_Path+"/Inventario.txt", Inventario,fmt="%s", delimiter =",",header="Genotipo, Conteo, % Veg")
 
 cv2.destroyAllWindows()
 

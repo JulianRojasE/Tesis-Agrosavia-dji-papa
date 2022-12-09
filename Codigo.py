@@ -35,10 +35,10 @@ def GeoreferenciaTran(Path_Qgis,Path_Orto):
     indicado en el parametro Path_Orto
 
     esta funcion recibe dos parametros;
-    Path_Qgis:la ruta donde se encuentran las coordenadas
+    Path_Qgis -- la ruta donde se encuentran las coordenadas
     extraidas de Qgis de los puntos de inicio y fin de cada surco
 
-    Path_Orto: Ruta del ortomosaico de interes
+    Path_Orto -- Ruta del ortomosaico de interes
 
     """
     Puntos = pd.read_csv(Path_Qgis)
@@ -74,19 +74,24 @@ def ExtraccionSurco(i):
     return output
 
 def SegUmbralizacion(Surco):
-    """Retorna la mascaara binaria resultado de segmentación
-    por umbralización
+    """Retorna la mascaara binaria resultado de la segmentación por umbralizacion
+       para un surco del cultivo
 
-    esta funcion recibe un parametro:
-    Surco: imagen que debe contener un unico surco para ser  segmentada  
+    Esta funcion recibe un parametro:
+    Surco -- imagen de uno de los n surcos del cultivo
+       producto de aplicar la funcion ExtraccionSurco()
     """
     blur = cv2.GaussianBlur(Surco,(5,5),0)
     ret,thresh = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return thresh
 
 def SegEspacioColor(Surco):
-    """
+    """Retorna la mascara binaria resultado de la segmentación por espacio de
+       color
     
+    Esta funcion recine un parametro:
+    Surco -- imagen de uno de los n surcos del cultivo
+       producto de aplicar la funcion ExtraccionSurco()
     """
     blur = cv2.GaussianBlur(Surco,(5,5),0)
     hsv = cv2.cvtColor(blur, cv2.COLOR_BGR2HSV)
@@ -108,8 +113,9 @@ def SegKmedias(Surco):
     """Retorna la mascara binaria resultado de la segmentacion de k-medias para 
        un surco del cultivo
 
-       Esta funcion recibe como parametro una imagen de uno de los n surcos del cultivo
-       producto de aplicar la funcion ExtraccionSurco()
+       Esta funcion recibe un parametro:
+       Surco -- imagen de uno de los n surcos del cultivo
+            producto de aplicar la funcion ExtraccionSurco()
 
     """
     img1 = np.copy(Surco)
